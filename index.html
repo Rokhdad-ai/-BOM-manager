@@ -35,6 +35,10 @@
                     <h3>مدیریت محصولات</h3>
                     <p>مشاهده و ایجاد محصولات جدید</p>
                 </div>
+                <div class="nav-btn" id="nav-reports">
+                    <h3>گزارش‌گیری</h3>
+                    <p>مشاهده و چاپ گزارش‌های BOM</p>
+                </div>
             </div>
         </section>
 
@@ -180,6 +184,24 @@
                     <input type="number" id="bom-price" readonly>
                 </div>
             </form>
+        </section>
+
+        <!-- صفحه گزارشات -->
+        <section id="reports-page" class="page">
+            <div class="header-section">
+                <button id="back-to-main-from-reports" class="btn-secondary">← بازگشت به منوی اصلی</button>
+                <h2>گزارش BOM محصول</h2>
+                <button id="print-report-btn" class="btn-primary">چاپ گزارش</button>
+            </div>
+            <div class="form-group">
+                <label for="report-product-select">انتخاب محصول:</label>
+                <select id="report-product-select">
+                    <option value="">یک محصول را انتخاب کنید...</option>
+                </select>
+            </div>
+            <div id="report-container">
+                <!-- محتوای گزارش در اینجا نمایش داده می‌شود -->
+            </div>
         </section>
     </main>
 

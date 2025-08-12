@@ -686,6 +686,105 @@ function toggleTheme() {
     document.body.className = currentTheme + '-theme';
 }
 
+// توابع مدیریت گزارشات
+function renderReportsPage() {
+    const select = document.getElementById('report-product-select');
+    select.innerHTML = '<option value="">یک محصول را انتخاب کنید...</option>';
+    
+    products.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = product.name;
+        select.appendChild(option);
+    });
+    
+    document.getElementById('report-container').innerHTML = '';
+    showPage('reports-page');
+}
+
+function generateReport(productId) {
+    const container = document.getElementById('report-container');
+    if (!productId) {
+        container.innerHTML = '<p>لطفا یک محصول را برای نمایش گزارش انتخاب کنید.</p>';
+        return;
+    }
+    
+    const product = products.find(p => p.id == productId);
+    if (!product) {
+        container.innerHTML = '<p>محصول مورد نظر یافت نشد.</p>';
+        return;
+    }
+    
+    let reportHTML = `
+        <div class="report-header">
+            <h3>گزارش BOM برای: ${product.name}</h3>
+            <p>${product.description || ''}</p>
+        </div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>نام قطعه</th>
+                    <th>تعداد</th>
+                    <th>واحد</th>
+                    <th>قیمت واحد</th>
+                    <th>مجموع هزینه</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    let totalCost = 0;
+    
+    function renderRow(item, level = 0) {
+        const itemName = getItemNameById(item.itemId);
+        const itemCost = (item.quantity || 0) * (item.unitPrice || 0);
+        totalCost += itemCost;
+        
+        reportHTML += `
+            <tr>
+                <td style="padding-right: ${level * 20}px;">${itemName}</td>
+                <td>${item.quantity}</td>
+                <td>${item.unit}</td>
+                <td>${formatCurrency(item.unitPrice)} تومان</td>
+                <td>${formatCurrency(itemCost)} تومان</td>
+            </tr>
+        `;
+        
+        if (item.children && item.children.length > 0) {
+            item.children.forEach(child => renderRow(child, level + 1));
+        }
+    }
+    
+    product.bom.forEach(item => renderRow(item));
+    
+    reportHTML += `
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" style="text-align: left; font-weight: bold;">هزینه کل:</td>
+                    <td style="font-weight: bold;">${formatCurrency(totalCost)} تومان</td>
+                </tr>
+            </tfoot>
+        </table>
+    `;
+    
+    container.innerHTML = reportHTML;
+}
+
+function printReport() {
+    const reportContent = document.getElementById('report-container').innerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = reportContent;
+    window.print();
+    document.body.innerHTML = originalContent;
+    
+    // نیاز به بازسازی Event Listeners پس از چاپ
+    // این یک راه حل ساده است، در یک برنامه واقعی باید این بخش بهتر مدیریت شود
+    location.reload(); 
+}
+
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     // نمایش منوی اصلی
@@ -701,6 +800,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProducts();
         showPage('products-list');
     });
+
+    document.getElementById('nav-reports').addEventListener('click', () => {
+        renderReportsPage();
+    });
     
     // دکمه‌های بازگشت به منوی اصلی
     document.getElementById('back-to-main-from-items').addEventListener('click', () => {
@@ -710,6 +813,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('back-to-main-from-products').addEventListener('click', () => {
         showPage('main-menu');
     });
+
+    document.getElementById('back-to-main-from-reports').addEventListener('click', () => {
+        showPage('main-menu');
+    });
+
+    // رویدادهای صفحه گزارشات
+    document.getElementById('report-product-select').addEventListener('change', (e) => {
+        generateReport(e.target.value);
+    });
+
+    document.getElementById('print-report-btn').addEventListener('click', printReport);
     
     // دکمه‌های مدیریت آیتم‌ها
     document.getElementById('add-item-btn').addEventListener('click', addItem);
