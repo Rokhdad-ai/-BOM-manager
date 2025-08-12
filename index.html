@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت مواد اولیه (BOM)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="light-theme">
+    <header>
+        <div class="header-content">
+            <h1>مدیریت مواد اولیه (BOM)</h1>
+            <div class="header-actions">
+                <button id="theme-toggle" class="btn-icon">
+                    <span class="sun-icon">☀️</span>
+                    <span class="moon-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="app">
+        <!-- صفحه اصلی - ناوبری اصلی -->
+        <section id="main-menu" class="page active">
+            <div class="header-section">
+                <h2>منوی اصلی</h2>
+            </div>
+            <div class="main-nav">
+                <div class="nav-btn" id="nav-items">
+                    <h3>مدیریت قطعات</h3>
+                    <p>افزودن و ویرایش قطعات موجود</p>
+                </div>
+                <div class="nav-btn" id="nav-products">
+                    <h3>مدیریت محصولات</h3>
+                    <p>مشاهده و ایجاد محصولات جدید</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- صفحه لیست آیتم‌ها -->
+        <section id="items-list" class="page">
+            <div class="header-section">
+                <h2>لیست قطعات</h2>
+                <button id="add-item-btn" class="btn-primary">افزودن قطعه جدید</button>
+            </div>
+            <div id="items-container" class="items-grid">
+                <!-- آیتم‌ها به صورت پویا اینجا نمایش داده می‌شوند -->
+            </div>
+            <div style="margin-top: 2rem; text-align: center;">
+                <button id="back-to-main-from-items" class="btn-secondary">← بازگشت به منوی اصلی</button>
+            </div>
+        </section>
+
+        <!-- فرم افزودن/ویرایش آیتم -->
+        <section id="item-form" class="page">
+            <div class="header-section">
+                <button id="cancel-item" class="btn-secondary">لغو</button>
+                <h2 id="item-form-title">افزودن قطعه جدید</h2>
+                <button id="save-item" class="btn-primary">ذخیره</button>
+            </div>
+            <form id="item-data-form" class="form">
+                <input type="hidden" id="item-id">
+                <div class="form-group">
+                    <label for="item-name">نام قطعه:</label>
+                    <input type="text" id="item-name" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="item-unit">واحد:</label>
+                        <select id="item-unit" required>
+                            <option value="عدد">عدد</option>
+                            <option value="متر">متر</option>
+                            <option value="کیلوگرم">کیلوگرم</option>
+                            <option value="لیتر">لیتر</option>
+                            <option value="بسته">بسته</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-price">قیمت واحد (تومان):</label>
+                        <input type="number" id="item-price" min="0" step="1000" value="0" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="item-description">توضیحات:</label>
+                    <textarea id="item-description" rows="3"></textarea>
+                </div>
+            </form>
+        </section>
+
+        <!-- صفحه لیست محصولات -->
+        <section id="products-list" class="page">
+            <div class="header-section">
+                <h2>لیست محصولات</h2>
+                <button id="create-product-btn" class="btn-success">ایجاد محصول جدید</button>
+            </div>
+            <div id="products-container" class="products-grid">
+                <!-- محصولات به صورت پویا اینجا نمایش داده می‌شوند -->
+            </div>
+            <div style="margin-top: 2rem; text-align: center;">
+                <button id="back-to-main-from-products" class="btn-secondary">← بازگشت به منوی اصلی</button>
+            </div>
+        </section>
+
+        <!-- صفحه ایجاد محصول جدید -->
+        <section id="create-product" class="page">
+            <div class="header-section">
+                <button id="back-to-products" class="btn-secondary">← بازگشت</button>
+                <h2>ایجاد محصول جدید</h2>
+                <button id="save-product" class="btn-primary">ذخیره محصول</button>
+            </div>
+            <form id="product-data-form" class="form">
+                <div class="form-group">
+                    <label for="product-name">نام محصول:</label>
+                    <input type="text" id="product-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-description">توضیحات:</label>
+                    <textarea id="product-description" rows="3"></textarea>
+                </div>
+            </form>
+            
+            <h3 style="margin: 2rem 0 1rem;">انتخاب قطعات برای محصول:</h3>
+            <div id="items-selection">
+                <!-- جدول انتخاب آیتم‌ها به صورت پویا اینجا نمایش داده می‌شود -->
+            </div>
+        </section>
+
+        <!-- صفحه مدیریت BOM -->
+        <section id="bom-management" class="page">
+            <div class="header-section">
+                <button id="back-to-products-list" class="btn-secondary">← بازگشت</button>
+                <h2 id="product-title">مدیریت BOM</h2>
+                <button id="add-bom-item" class="btn-primary">افزودن آیتم</button>
+            </div>
+            <div class="summary-box">
+                <div class="summary-item">
+                    <span class="summary-label">تعداد کل قطعات:</span>
+                    <span id="total-items" class="summary-value">0</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">مجموع هزینه:</span>
+                    <span id="total-cost" class="summary-value">0 تومان</span>
+                </div>
+            </div>
+            <div id="bom-tree" class="bom-tree">
+                <!-- ساختار درختی BOM به صورت پویا اینجا نمایش داده می‌شود -->
+            </div>
+        </section>
+
+        <!-- فرم افزودن آیتم BOM -->
+        <section id="bom-item-form" class="page">
+            <div class="header-section">
+                <button id="cancel-bom-item" class="btn-secondary">لغو</button>
+                <h2 id="bom-form-title">افزودن آیتم BOM</h2>
+                <button id="save-bom-item" class="btn-primary">ذخیره</button>
+            </div>
+            <form id="bom-item-data-form" class="form">
+                <input type="hidden" id="bom-item-id">
+                <input type="hidden" id="parent-id">
+                <div class="form-group">
+                    <label for="bom-item-select">انتخاب قطعه یا محصول:</label>
+                    <select id="bom-item-select" required>
+                        <option value="">انتخاب کنید...</option>
+                        <!-- گزینه‌ها به صورت پویا اضافه می‌شوند -->
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bom-quantity">تعداد:</label>
+                        <input type="number" id="bom-quantity" min="1" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bom-unit">واحد:</label>
+                        <input type="text" id="bom-unit" readonly>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="bom-price">قیمت واحد (تومان):</label>
+                    <input type="number" id="bom-price" readonly>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>تولید شده در استدیو هوش مصنوعی رخداد با مقداری قهوه</p>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
