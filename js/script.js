@@ -464,7 +464,7 @@ function renderBOM() {
                     <div class="bom-item-details">
                         <span class="bom-item-quantity">${quantity} ${item.unit || ''}</span>
                         <span class="bom-item-price">${formatCurrency(unitPrice)} تومان</span>
-                        <span class="bom-item-price" style="background: var(--info);">${formatCurrency(itemCost)} تومان</span>
+                        <span class="bom-item-price" style="background: var(--primary); color: var(--primary-foreground);">${formatCurrency(itemCost)} تومان</span>
                     </div>
                     <div class="bom-item-actions">
                         <button class="btn-icon-sm add-child" title="افزودن زیرمجموعه" data-id="${item.id}">
@@ -680,16 +680,356 @@ function deleteBOMItem(itemId) {
     renderBOM();
 }
 
-// تغییر تم
-function toggleTheme() {
-    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.body.className = currentTheme + '-theme';
+// گزارش‌ها
+// گزارش خلاصه محصولات
+function generateSummaryReport() {
+    const totalProducts = products.length;
+    let totalItemsCount = 0;
+    let totalInventoryValue = 0;
+    
+    // محاسبه تعداد کل قطعات و ارزش کل
+    products.forEach(product => {
+        function calculateStats(bom) {
+            bom.forEach(item => {
+                totalItemsCount += item.quantity || 0;
+                totalInventoryValue += (item.quantity || 0) * (item.unitPrice || 0);
+                if (item.children && item.children.length > 0) {
+                    calculateStats(item.children);
+                }
+            });
+        }
+        calculateStats(product.bom);
+    });
+    
+    // نمایش در UI
+    document.getElementById('total-products').textContent = totalProducts;
+    document.getElementById('total-items-count').textContent = totalItemsCount;
+    document.getElementById('total-inventory-value').textContent = `${formatCurrency(totalInventoryValue)} تومان`;
+    
+    // پرهزینه‌ترین محصولات
+    const expensiveProducts = [...products].sort((a, b) => {
+        const costA = calculateProductCost(a);
+        const costB = calculateProductCost(b);
+        return costB - costA;
+    }).slice(0, 5);
+    
+    renderExpensiveProducts(expensiveProducts);
+    
+    // محبوب‌ترین قطعات
+    const popularItems = getPopularItems();
+    renderPopularItems(popularItems);
+    
+    showPage('reports-summary');
 }
 
-// توابع مدیریت گزارشات
-function renderReportsPage() {
-    const select = document.getElementById('report-product-select');
-    select.innerHTML = '<option value="">یک محصول را انتخاب کنید...</option>';
+function calculateProductCost(product) {
+    let totalCost = 0;
+    function calculate(bom) {
+        bom.forEach(item => {
+            totalCost += (item.quantity || 0) * (item.unitPrice || 0);
+            if (item.children && item.children.length > 0) {
+                calculate(item.children);
+            }
+        });
+    }
+    calculate(product.bom);
+    return totalCost;
+}
+
+function renderExpensiveProducts(productsList) {
+    const container = document.getElementById('expensive-products');
+    container.innerHTML = '';
+    
+    productsList.forEach(product => {
+        const cost = calculateProductCost(product);
+        const card = document.createElement('div');
+        card.className = 'report-card';
+        card.innerHTML = `
+            <h4>${product.name}</h4>
+            <p class="report-value">${formatCurrency(cost)} تومان</p>
+            <p class="report-description">${product.description || 'بدون توضیحات'}</p>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function getPopularItems() {
+    const itemCounts = {};
+    
+    products.forEach(product => {
+        function countItems(bom) {
+            bom.forEach(item => {
+                if (itemCounts[item.itemId]) {
+                    itemCounts[item.itemId] += item.quantity || 0;
+                } else {
+                    itemCounts[item.itemId] = item.quantity || 0;
+                }
+                
+                if (item.children && item.children.length > 0) {
+                    countItems(item.children);
+                }
+            });
+        }
+        countItems(product.bom);
+    });
+    
+    // تبدیل به آرایه و مرتب‌سازی
+    const itemsArray = Object.entries(itemCounts).map(([itemId, count]) => {
+        const item = items.find(i => i.id == itemId) || products.find(p => p.id == itemId);
+        return {
+            id: itemId,
+            name: item ? item.name : 'قطعه نامشخص',
+            count: count
+        };
+    });
+    
+    return itemsArray.sort((a, b) => b.count - a.count).slice(0, 5);
+}
+
+function renderPopularItems(itemsList) {
+    const container = document.getElementById('popular-items');
+    container.innerHTML = '';
+    
+    itemsList.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'report-card';
+        card.innerHTML = `
+            <h4>${item.name}</h4>
+            <p class="report-value">${item.count} عدد استفاده شده</p>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${Math.min(item.count * 10, 100)}%"></div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// گزارش تحلیلی قطعات
+function generateItemsAnalysisReport() {
+    renderItemsAnalysis();
+    showPage('items-analysis-report');
+}
+
+function renderItemsAnalysis() {
+    const sortBy = document.getElementById('sort-by').value;
+    const sortOrder = document.getElementById('sort-order').value;
+    
+    let sortedItems = [...items];
+    
+    // مرتب‌سازی
+    sortedItems.sort((a, b) => {
+        let valueA, valueB;
+        
+        switch(sortBy) {
+            case 'price':
+                valueA = a.unitPrice;
+                valueB = b.unitPrice;
+                break;
+            case 'name':
+                valueA = a.name;
+                valueB = b.name;
+                break;
+            case 'usage':
+                // محاسبه تعداد استفاده از هر قطعه
+                const usageA = getUsageCount(a.id);
+                const usageB = getUsageCount(b.id);
+                valueA = usageA;
+                valueB = usageB;
+                break;
+            default:
+                valueA = a.unitPrice;
+                valueB = b.unitPrice;
+        }
+        
+        if (sortOrder === 'asc') {
+            return valueA > valueB ? 1 : -1;
+        } else {
+            return valueA < valueB ? 1 : -1;
+        }
+    });
+    
+    const container = document.getElementById('items-analysis-container');
+    container.innerHTML = '';
+    
+    sortedItems.forEach(item => {
+        const usageCount = getUsageCount(item.id);
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        card.innerHTML = `
+            <div class="item-card-header">
+                <h3>${item.name}</h3>
+            </div>
+            <div class="item-card-body">
+                <p>${item.description || 'بدون توضیحات'}</p>
+                <div class="item-stats">
+                    <span class="item-price">${formatCurrency(item.unitPrice)} تومان / ${item.unit}</span>
+                    <span class="usage-count">تعداد استفاده: ${usageCount}</span>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function getUsageCount(itemId) {
+    let count = 0;
+    products.forEach(product => {
+        function countItems(bom) {
+            bom.forEach(item => {
+                if (item.itemId == itemId) {
+                    count += item.quantity || 0;
+                }
+                if (item.children && item.children.length > 0) {
+                    countItems(item.children);
+                }
+            });
+        }
+        countItems(product.bom);
+    });
+    return count;
+}
+
+// گزارش مقایسه محصولات
+function generateProductComparisonReport() {
+    // پر کردن select‌ها
+    const select1 = document.getElementById('product-1');
+    const select2 = document.getElementById('product-2');
+    
+    select1.innerHTML = '<option value="">انتخاب کنید...</option>';
+    select2.innerHTML = '<option value="">انتخاب کنید...</option>';
+    
+    products.forEach(product => {
+        const option1 = document.createElement('option');
+        option1.value = product.id;
+        option1.textContent = product.name;
+        select1.appendChild(option1);
+        
+        const option2 = document.createElement('option');
+        option2.value = product.id;
+        option2.textContent = product.name;
+        select2.appendChild(option2);
+    });
+    
+    showPage('product-comparison-report');
+}
+
+function compareProducts() {
+    const productId1 = document.getElementById('product-1').value;
+    const productId2 = document.getElementById('product-2').value;
+    
+    if (!productId1 || !productId2) {
+        alert('لطفا هر دو محصول را انتخاب کنید');
+        return;
+    }
+    
+    const product1 = products.find(p => p.id == productId1);
+    const product2 = products.find(p => p.id == productId2);
+    
+    if (!product1 || !product2) {
+        alert('محصولات انتخاب شده معتبر نیستند');
+        return;
+    }
+    
+    const cost1 = calculateProductCost(product1);
+    const cost2 = calculateProductCost(product2);
+    const itemsCount1 = countBomItems(product1.bom);
+    const itemsCount2 = countBomItems(product2.bom);
+    
+    const container = document.getElementById('comparison-results');
+    container.innerHTML = `
+        <div class="comparison-container">
+            <div class="comparison-column">
+                <h3>${product1.name}</h3>
+                <div class="comparison-item">
+                    <span>هزینه کل:</span>
+                    <span class="value">${formatCurrency(cost1)} تومان</span>
+                </div>
+                <div class="comparison-item">
+                    <span>تعداد قطعات:</span>
+                    <span class="value">${itemsCount1}</span>
+                </div>
+            </div>
+            
+            <div class="comparison-column">
+                <h3>${product2.name}</h3>
+                <div class="comparison-item">
+                    <span>هزینه کل:</span>
+                    <span class="value">${formatCurrency(cost2)} تومان</span>
+                </div>
+                <div class="comparison-item">
+                    <span>تعداد قطعات:</span>
+                    <span class="value">${itemsCount2}</span>
+                </div>
+            </div>
+            
+            <div class="comparison-column">
+                <h3>تفاوت</h3>
+                <div class="comparison-item">
+                    <span>هزینه:</span>
+                    <span class="value ${cost1 > cost2 ? 'positive' : 'negative'}">
+                        ${formatCurrency(Math.abs(cost1 - cost2))} تومان
+                    </span>
+                </div>
+                <div class="comparison-item">
+                    <span>قطعات:</span>
+                    <span class="value ${itemsCount1 > itemsCount2 ? 'positive' : 'negative'}">
+                        ${Math.abs(itemsCount1 - itemsCount2)}
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function countBomItems(bom) {
+    let count = 0;
+    function traverse(items) {
+        items.forEach(item => {
+            count += item.quantity || 0;
+            if (item.children && item.children.length > 0) {
+                traverse(item.children);
+            }
+        });
+    }
+    traverse(bom);
+    return count;
+}
+
+// گزارش موجودی قطعات
+function generateInventoryReport() {
+    renderInventoryTable();
+    showPage('inventory-report');
+}
+
+function renderInventoryTable() {
+    const tbody = document.getElementById('inventory-table-body');
+    tbody.innerHTML = '';
+    
+    items.forEach((item, index) => {
+        const usageCount = getUsageCount(item.id);
+        const inventoryValue = usageCount * item.unitPrice;
+        const status = usageCount > 10 ? 'عادی' : usageCount > 5 ? 'هشدار' : 'بحرانی';
+        const statusClass = usageCount > 10 ? 'status-normal' : usageCount > 5 ? 'status-warning' : 'status-critical';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${item.name}</td>
+            <td>${item.unit}</td>
+            <td>${formatCurrency(item.unitPrice)} تومان</td>
+            <td>${usageCount}</td>
+            <td>${formatCurrency(inventoryValue)} تومان</td>
+            <td><span class="status-badge ${statusClass}">${status}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// گزارش ساختار BOM
+function generateBomStructureReport() {
+    // پر کردن select محصولات
+    const select = document.getElementById('bom-product-select');
+    select.innerHTML = '<option value="">انتخاب کنید...</option>';
     
     products.forEach(product => {
         const option = document.createElement('option');
@@ -698,92 +1038,72 @@ function renderReportsPage() {
         select.appendChild(option);
     });
     
-    document.getElementById('report-container').innerHTML = '';
-    showPage('reports-page');
+    showPage('bom-structure-report');
 }
 
-function generateReport(productId) {
-    const container = document.getElementById('report-container');
+function showBomStructure() {
+    const productId = document.getElementById('bom-product-select').value;
     if (!productId) {
-        container.innerHTML = '<p>لطفا یک محصول را برای نمایش گزارش انتخاب کنید.</p>';
+        alert('لطفا یک محصول انتخاب کنید');
         return;
     }
     
     const product = products.find(p => p.id == productId);
     if (!product) {
-        container.innerHTML = '<p>محصول مورد نظر یافت نشد.</p>';
+        alert('محصول انتخاب شده معتبر نیست');
         return;
     }
     
-    let reportHTML = `
-        <div class="report-header">
-            <h3>گزارش BOM برای: ${product.name}</h3>
-            <p>${product.description || ''}</p>
-        </div>
-        <table class="report-table">
-            <thead>
-                <tr>
-                    <th>نام قطعه</th>
-                    <th>تعداد</th>
-                    <th>واحد</th>
-                    <th>قیمت واحد</th>
-                    <th>مجموع هزینه</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+    const container = document.getElementById('bom-structure-container');
+    container.innerHTML = '';
     
-    let totalCost = 0;
+    document.getElementById('product-title').textContent = `ساختار BOM - ${product.name}`;
     
-    function renderRow(item, level = 0) {
-        const itemName = getItemNameById(item.itemId);
-        const itemCost = (item.quantity || 0) * (item.unitPrice || 0);
-        totalCost += itemCost;
+    function renderItems(items, level = 0) {
+        const ul = document.createElement('div');
+        ul.className = level > 0 ? 'bom-item-children' : '';
         
-        reportHTML += `
-            <tr>
-                <td style="padding-right: ${level * 20}px;">${itemName}</td>
-                <td>${item.quantity}</td>
-                <td>${item.unit}</td>
-                <td>${formatCurrency(item.unitPrice)} تومان</td>
-                <td>${formatCurrency(itemCost)} تومان</td>
-            </tr>
-        `;
+        items.forEach(item => {
+            const itemName = getItemNameById(item.itemId);
+            const quantity = item.quantity || 0;
+            const unitPrice = item.unitPrice || 0;
+            const itemCost = quantity * unitPrice;
+            
+            const li = document.createElement('div');
+            li.className = 'bom-item';
+            li.innerHTML = `
+                <div class="bom-item-header">
+                    <div>
+                        <span class="bom-item-title">${itemName}</span>
+                    </div>
+                    <div class="bom-item-details">
+                        <span class="bom-item-quantity">${quantity} ${item.unit || ''}</span>
+                        <span class="bom-item-price">${formatCurrency(unitPrice)} تومان</span>
+                        <span class="bom-item-price" style="background: var(--primary); color: var(--primary-foreground);">${formatCurrency(itemCost)} تومان</span>
+                    </div>
+                </div>
+            `;
+            
+            ul.appendChild(li);
+            
+            // نمایش زیرمجموعه‌ها
+            if (item.children && item.children.length > 0) {
+                const childrenContainer = renderItems(item.children, level + 1);
+                li.appendChild(childrenContainer);
+            }
+        });
         
-        if (item.children && item.children.length > 0) {
-            item.children.forEach(child => renderRow(child, level + 1));
-        }
+        return ul;
     }
     
-    product.bom.forEach(item => renderRow(item));
-    
-    reportHTML += `
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="4" style="text-align: left; font-weight: bold;">هزینه کل:</td>
-                    <td style="font-weight: bold;">${formatCurrency(totalCost)} تومان</td>
-                </tr>
-            </tfoot>
-        </table>
-    `;
-    
-    container.innerHTML = reportHTML;
+    container.appendChild(renderItems(product.bom));
 }
 
-function printReport() {
-    const reportContent = document.getElementById('report-container').innerHTML;
-    const originalContent = document.body.innerHTML;
-    
-    document.body.innerHTML = reportContent;
-    window.print();
-    document.body.innerHTML = originalContent;
-    
-    // نیاز به بازسازی Event Listeners پس از چاپ
-    // این یک راه حل ساده است، در یک برنامه واقعی باید این بخش بهتر مدیریت شود
-    location.reload(); 
+// تغییر تم
+function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.body.className = currentTheme;
 }
-
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
@@ -800,10 +1120,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProducts();
         showPage('products-list');
     });
-
-    document.getElementById('nav-reports').addEventListener('click', () => {
-        renderReportsPage();
-    });
     
     // دکمه‌های بازگشت به منوی اصلی
     document.getElementById('back-to-main-from-items').addEventListener('click', () => {
@@ -813,17 +1129,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('back-to-main-from-products').addEventListener('click', () => {
         showPage('main-menu');
     });
-
-    document.getElementById('back-to-main-from-reports').addEventListener('click', () => {
-        showPage('main-menu');
-    });
-
-    // رویدادهای صفحه گزارشات
-    document.getElementById('report-product-select').addEventListener('change', (e) => {
-        generateReport(e.target.value);
-    });
-
-    document.getElementById('print-report-btn').addEventListener('click', printReport);
     
     // دکمه‌های مدیریت آیتم‌ها
     document.getElementById('add-item-btn').addEventListener('click', addItem);
@@ -865,5 +1170,49 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('bom-unit').value = '';
             document.getElementById('bom-price').value = '';
         }
+    });
+    
+    // گزارش‌ها
+    document.getElementById('nav-reports').addEventListener('click', () => {
+        showPage('reports-menu');
+    });
+    
+    // گزارش خلاصه
+    document.getElementById('nav-summary-report').addEventListener('click', generateSummaryReport);
+    document.getElementById('back-to-main-from-reports').addEventListener('click', () => {
+        showPage('main-menu');
+    });
+    
+    // گزارش تحلیلی قطعات
+    document.getElementById('nav-items-analysis').addEventListener('click', generateItemsAnalysisReport);
+    document.getElementById('sort-by').addEventListener('change', renderItemsAnalysis);
+    document.getElementById('sort-order').addEventListener('change', renderItemsAnalysis);
+    document.getElementById('back-to-reports').addEventListener('click', () => {
+        showPage('reports-menu');
+    });
+    
+    // گزارش مقایسه محصولات
+    document.getElementById('nav-product-comparison').addEventListener('click', generateProductComparisonReport);
+    document.getElementById('compare-products-btn').addEventListener('click', compareProducts);
+    document.getElementById('back-to-reports-comparison').addEventListener('click', () => {
+        showPage('reports-menu');
+    });
+    
+    // گزارش موجودی
+    document.getElementById('nav-inventory-report').addEventListener('click', generateInventoryReport);
+    document.getElementById('back-to-reports-inventory').addEventListener('click', () => {
+        showPage('reports-menu');
+    });
+    
+    // گزارش ساختار BOM
+    document.getElementById('nav-bom-structure').addEventListener('click', generateBomStructureReport);
+    document.getElementById('bom-product-select').addEventListener('change', showBomStructure);
+    document.getElementById('back-to-reports-bom').addEventListener('click', () => {
+        showPage('reports-menu');
+    });
+    
+    // بازگشت به منوی اصلی از منوی گزارش‌ها
+    document.getElementById('back-to-main-from-reports-menu').addEventListener('click', () => {
+        showPage('main-menu');
     });
 });
