@@ -2,12 +2,12 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"ivate-scale=1.0">
     <title>مدیریت مواد اولیه (BOM)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="light-theme">
+<body class="light">
     <header>
         <div class="header-content">
             <h1>مدیریت مواد اولیه (BOM)</h1>
@@ -36,8 +36,8 @@
                     <p>مشاهده و ایجاد محصولات جدید</p>
                 </div>
                 <div class="nav-btn" id="nav-reports">
-                    <h3>گزارش‌گیری</h3>
-                    <p>مشاهده و چاپ گزارش‌های BOM</p>
+                    <h3>گزارش‌ها</h3>
+                    <p>مشاهده گزارش‌های تحلیلی</p>
                 </div>
             </div>
         </section>
@@ -186,21 +186,192 @@
             </form>
         </section>
 
-        <!-- صفحه گزارشات -->
-        <section id="reports-page" class="page">
+        <!-- صفحه اصلی گزارش‌ها -->
+        <section id="reports-menu" class="page">
             <div class="header-section">
-                <button id="back-to-main-from-reports" class="btn-secondary">← بازگشت به منوی اصلی</button>
-                <h2>گزارش BOM محصول</h2>
-                <button id="print-report-btn" class="btn-primary">چاپ گزارش</button>
+                <h2>منوی گزارش‌ها</h2>
+                <button id="back-to-main-from-reports-menu" class="btn-secondary">← بازگشت به منوی اصلی</button>
             </div>
+            
+            <div class="main-nav">
+                <div class="nav-btn" id="nav-summary-report">
+                    <h3>خلاصه محصولات</h3>
+                    <p>بررسی کلی محصولات و قطعات</p>
+                </div>
+                <div class="nav-btn" id="nav-items-analysis">
+                    <h3>تحلیل قطعات</h3>
+                    <p>تحلیل تفصیلی قطعات</p>
+                </div>
+                <div class="nav-btn" id="nav-product-comparison">
+                    <h3>مقایسه محصولات</h3>
+                    <p>مقایسه هزینه و ساختار محصولات</p>
+                </div>
+                <div class="nav-btn" id="nav-inventory-report">
+                    <h3>موجودی قطعات</h3>
+                    <p>گزارش موجودی و ارزش انبار</p>
+                </div>
+                <div class="nav-btn" id="nav-bom-structure">
+                    <h3>ساختار BOM</h3>
+                    <p>نمایش درختی ساختار محصولات</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- گزارش خلاصه محصولات -->
+        <section id="reports-summary" class="page">
+            <div class="header-section">
+                <h2>گزارش خلاصه محصولات</h2>
+                <button id="back-to-main-from-reports" class="btn-secondary">← بازگشت به منوی اصلی</button>
+            </div>
+            
+            <div class="summary-box">
+                <div class="summary-item">
+                    <span class="summary-label">تعداد کل محصولات</span>
+                    <span id="total-products" class="summary-value">0</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">تعداد کل قطعات</span>
+                    <span id="total-items-count" class="summary-value">0</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">ارزش کل موجودی</span>
+                    <span id="total-inventory-value" class="summary-value">0 تومان</span>
+                </div>
+            </div>
+            
+            <div class="report-section">
+                <h3>پرهزینه‌ترین محصولات</h3>
+                <div id="expensive-products" class="report-grid">
+                    <!-- لیست پرهزینه‌ترین محصولات -->
+                </div>
+            </div>
+            
+            <div class="report-section">
+                <h3>محبوب‌ترین قطعات</h3>
+                <div id="popular-items" class="report-grid">
+                    <!-- لیست قطعاتی که بیشترین استفاده را دارند -->
+                </div>
+            </div>
+        </section>
+
+        <!-- گزارش تحلیلی قطعات -->
+        <section id="items-analysis-report" class="page">
+            <div class="header-section">
+                <h2>تحلیل قطعات</h2>
+                <button id="back-to-reports" class="btn-secondary">← بازگشت به گزارش‌ها</button>
+            </div>
+            
+            <div class="report-filters">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sort-by">مرتب‌سازی بر اساس:</label>
+                        <select id="sort-by">
+                            <option value="price">قیمت</option>
+                            <option value="usage">تعداد استفاده</option>
+                            <option value="name">نام</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sort-order">ترتیب:</label>
+                        <select id="sort-order">
+                            <option value="desc">نزولی</option>
+                            <option value="asc">صعودی</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="items-analysis-container" class="items-grid">
+                <!-- نمایش تحلیل قطعات -->
+            </div>
+        </section>
+
+        <!-- گزارش مقایسه محصولات -->
+        <section id="product-comparison-report" class="page">
+            <div class="header-section">
+                <h2>مقایسه محصولات</h2>
+                <button id="back-to-reports-comparison" class="btn-secondary">← بازگشت به گزارش‌ها</button>
+            </div>
+            
+            <div class="comparison-selector">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-1">محصول اول:</label>
+                        <select id="product-1">
+                            <option value="">انتخاب کنید...</option>
+                            <!-- گزینه‌های محصولات -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-2">محصول دوم:</label>
+                        <select id="product-2">
+                            <option value="">انتخاب کنید...</option>
+                            <!-- گزینه‌های محصولات -->
+                        </select>
+                    </div>
+                </div>
+                <button id="compare-products-btn" class="btn-primary">مقایسه</button>
+            </div>
+            
+            <div id="comparison-results" class="comparison-results">
+                <!-- نتایج مقایسه -->
+            </div>
+        </section>
+
+        <!-- گزارش موجودی قطعات -->
+        <section id="inventory-report" class="page">
+            <div class="header-section">
+                <h2>گزارش موجودی قطعات</h2>
+                <button id="back-to-reports-inventory" class="btn-secondary">← بازگشت به گزارش‌ها</button>
+            </div>
+            
+            <div class="report-actions">
+                <button id="export-inventory-btn" class="btn-success">خروجی Excel</button>
+                <button id="print-inventory-btn" class="btn-primary">چاپ</button>
+            </div>
+            
+            <div class="table-container">
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>ردیف</th>
+                            <th>نام قطعه</th>
+                            <th>واحد</th>
+                            <th>قیمت واحد</th>
+                            <th>تعداد موجود</th>
+                            <th>ارزش موجودی</th>
+                            <th>وضعیت</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table-body">
+                        <!-- ردیف‌های موجودی -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- گزارش ساختار درختی BOM -->
+        <section id="bom-structure-report" class="page">
+            <div class="header-section">
+                <h2>ساختار درختی BOM</h2>
+                <button id="back-to-reports-bom" class="btn-secondary">← بازگشت به گزارش‌ها</button>
+            </div>
+            
             <div class="form-group">
-                <label for="report-product-select">انتخاب محصول:</label>
-                <select id="report-product-select">
-                    <option value="">یک محصول را انتخاب کنید...</option>
+                <label for="bom-product-select">انتخاب محصول:</label>
+                <select id="bom-product-select">
+                    <option value="">انتخاب کنید...</option>
+                    <!-- گزینه‌های محصولات -->
                 </select>
             </div>
-            <div id="report-container">
-                <!-- محتوای گزارش در اینجا نمایش داده می‌شود -->
+            
+            <div id="bom-structure-container" class="bom-tree">
+                <!-- نمایش ساختار درختی -->
+            </div>
+            
+            <div class="report-actions" style="margin-top: 2rem;">
+                <button id="export-bom-btn" class="btn-success">خروجی PDF</button>
+                <button id="print-bom-btn" class="btn-primary">چاپ</button>
             </div>
         </section>
     </main>
